@@ -39,31 +39,9 @@ def get_ws(name):
     try: return client.open_by_key(SHEET_ID).worksheet(name)
     except Exception as e: st.error(f"Sheet '{name}' Error: {e}"); return None
 
-# --- 4. LOGIN & NAVIGATION ---
-USER_CREDENTIALS = {"asikul.islam@pathao.com": "Win@1234",
-    "jahidul.saimon@pathao.com": "saimon9090",
-    "lira@pathao.com": "lira1234"
-}
-if 'logged_in' not in st.session_state: st.session_state['logged_in'] = False
-
-if not st.session_state['logged_in']:
-    st.title("🔐 Secure Access")
-    with st.form("login"):
-        u = st.text_input("Email").lower().strip()
-        p = st.text_input("Password", type="password")
-        if st.form_submit_button("Login"):
-            if u in USER_CREDENTIALS and USER_CREDENTIALS[u] == p:
-                st.session_state['logged_in'] = True
-                st.rerun()
-            else: st.error("Wrong info!")
-    st.stop()
-
+# --- 4. NAVIGATION (লগইন ছাড়া সরাসরি এক্সেস) ---
 page = st.sidebar.selectbox("Navigation", 
     ["Dashboard", "Plan Daily Tasks", "Update Task Status (EOD)", "QA Details", "Driver Onboarding", "Agent Training", "Improvement & Initiatives", "Suspension Re-Validation"])
-
-if st.sidebar.button("Logout"):
-    st.session_state['logged_in'] = False
-    st.rerun()
 
 # --- 5. PAGE: DASHBOARD (TARGETS + FILTERS) ---
 if page == "Dashboard":
@@ -82,7 +60,7 @@ if page == "Dashboard":
             df.columns = df.columns.str.strip()
             df['Date'] = pd.to_datetime(df['Date']).dt.date
 
-    # --- ১. রিয়েল-টাইম টার্গেট সেকশন (সবসময় দেখা যাবে) ---
+    # --- ১. রিয়েল-টাইম টার্গেট সেকশন (সবসময় দেখা যাবে) ---
     st.subheader("🎯 Current Progress vs Targets")
     t_col1, t_col2, t_col3, t_col4 = st.columns(4)
     
@@ -140,7 +118,7 @@ if page == "Dashboard":
     else:
         f_col4.metric("Avg Accuracy", "0%")
 
-    # --- ৩. ভিজ্যুয়াল চার্ট ---
+    # --- ৩. ভিজ্যুয়াল চার্ট ---
     c1, c2 = st.columns(2)
     with c1:
         st.write(f"📈 **Audit Trend ({suffix})**")
@@ -204,7 +182,8 @@ elif page == "Improvement & Initiatives":
             if ws:
                 ws.append_row([today_str, p_name, desc, impact, timeline])
                 st.success("Initiative Saved!")
-# --- 6. PAGE: PLAN DAILY TASKS ---
+                
+# --- 8. PAGE: PLAN DAILY TASKS ---
 elif page == "Plan Daily Tasks":
     st.header("📝 Morning Planning")
     with st.form("plan", clear_on_submit=True):
@@ -218,7 +197,7 @@ elif page == "Plan Daily Tasks":
                 st.success("Task added!")
                 st.rerun()
 
-# --- 7. PAGE: UPDATE TASK STATUS (EOD) ---
+# --- 9. PAGE: UPDATE TASK STATUS (EOD) ---
 elif page == "Update Task Status (EOD)":
     st.header("✅ End of Day Update")
     ws = get_ws("tasks")
@@ -242,7 +221,7 @@ elif page == "Update Task Status (EOD)":
                             st.rerun()
             else: st.info("No pending tasks today.")
 
-# --- 8. PAGE: QA DETAILS ---
+# --- 10. PAGE: QA DETAILS ---
 elif page == "QA Details":
     st.header("🔍 QA Audit Logs")
     with st.form("qa_log", clear_on_submit=True):
@@ -257,7 +236,7 @@ elif page == "QA Details":
                 ws.append_row([today_str, channel, cnt, err, acc, hrs])
                 st.success(f"QA Saved for {channel}!")
 
-# --- 9. PAGE: DRIVER ONBOARDING ---
+# --- 11. PAGE: DRIVER ONBOARDING ---
 elif page == "Driver Onboarding":
     st.header("🚗 Driver Onboarding & Management")
     ws = get_ws("drivers")
@@ -285,7 +264,6 @@ elif page == "Driver Onboarding":
         if data:
             df = pd.DataFrame(data)
             df.columns = df.columns.str.strip()
-            # শুধু যাদের প্রথম ট্রিপ হয়নি তাদের দেখাবে
             pending = df[df['First Trip'] != "Yes"]
             for idx, row in pending.iterrows():
                 row_num = idx + 2
@@ -301,7 +279,7 @@ elif page == "Driver Onboarding":
                         st.success("Updated!")
                         st.rerun()
 
-# --- 10. PAGE: SUSPENSION RE-VALIDATION ---
+# --- 12. PAGE: SUSPENSION RE-VALIDATION ---
 elif page == "Suspension Re-Validation":
     st.header("⚠️ Suspension Re-Validation")
     up = st.file_uploader("Upload CSV/Excel", type=["csv", "xlsx"])
